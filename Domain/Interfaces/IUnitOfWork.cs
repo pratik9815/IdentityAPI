@@ -12,6 +12,7 @@ public interface IUnitOfWork
     IUserRepository Users { get; }
     IRefreshTokenRepository RefreshTokens { get; }
     IRepository<Role> Roles { get; }
+    IUserRoleRepository UserRoles { get; }
     IAuditTrailRepository AuditTrails { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

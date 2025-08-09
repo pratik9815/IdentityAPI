@@ -21,12 +21,14 @@ public class UnitOfWork : IUnitOfWork
         Users = new UserRepository(_context);
         RefreshTokens = new RefreshTokenRepository(_context);
         Roles = new Repository<Role>(_context);
+        UserRoles = new UserRoleRepository(_context);
         AuditTrails = new AuditTrailRepository(_context);
     }
 
     public IUserRepository Users { get; }
     public IRefreshTokenRepository RefreshTokens { get; }
     public IRepository<Role> Roles { get; }
+    public IUserRoleRepository UserRoles { get; }
     public IAuditTrailRepository AuditTrails { get; }
 
     public async Task<int> SaveChangesAsync()

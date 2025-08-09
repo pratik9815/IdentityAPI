@@ -5,6 +5,7 @@ using Application.DTOs.Auth.Validators;
 using Domain.Interfaces;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using IdentityAPi.ExceptionHandlingMiddleware;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
@@ -20,30 +21,18 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddIdentityApiServices(this IServiceCollection services, IConfiguration configuration)
     {
+        //configure fluent validation globally
+        services.AddControllers(options =>
+        {
+            options.Filters.Add<ValidationFilter>(); // Auto validation handling
+        })
+        .ConfigureApiBehaviorOptions(options =>
+        {
+            options.SuppressModelStateInvalidFilter = true; // disable automatic 400
+        });
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
         services.AddFluentValidationAutoValidation(); // enables automatic validation
         services.AddFluentValidationClientsideAdapters(); // optional for client-side validation
-
-        services.Configure<ApiBehaviorOptions>(options =>
-        {
-            options.InvalidModelStateResponseFactory = context =>
-            {
-                var firstError = context.ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .FirstOrDefault();
-
-                var response = new
-                {
-                    Message = "Validation failed",
-                    Detail = firstError
-                };
-
-                return new BadRequestObjectResult(response);
-            };
-        });
-
-
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
@@ -88,7 +77,6 @@ public static class ConfigureServices
 
         // MediatR
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterRequestValidator>());
-        //services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyReference).Assembly));
 
         // Swagger
         services.AddEndpointsApiExplorer();
@@ -126,7 +114,7 @@ public static class ConfigureServices
         {
             options.AddPolicy("AllowSpecificOrigins",
                 policy => policy
-                    .WithOrigins("http://localhost:3000", "https://yourfrontend.com")
+                    .WithOrigins("http://localhost:3000")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials());
