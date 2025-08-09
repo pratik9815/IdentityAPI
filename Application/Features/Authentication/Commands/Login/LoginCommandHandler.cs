@@ -54,7 +54,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthenticationR
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedByIp = request.IpAddress,
             UserId = user.Id
-            // CreatedAt, CreatedBy will be set automatically by DbContext
         };
 
         await _unitOfWork.RefreshTokens.AddAsync(refreshTokenEntity);

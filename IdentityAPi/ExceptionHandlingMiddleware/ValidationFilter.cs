@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Application.Common.Enums;
+using Application.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 namespace IdentityAPi.ExceptionHandlingMiddleware;
 public class ValidationFilter : IActionFilter
@@ -12,19 +14,15 @@ public class ValidationFilter : IActionFilter
                 .Select(e => e.ErrorMessage)
                 .FirstOrDefault();
 
-            var response = new
-            {
-                Message = "Validation failed",
-                Detail = firstError
-            };
+            var apiResponse = ApiResponse<string>.FailureResponse(
+                firstError,
+                OperationType.None,
+                "Validation failed"
+            );
 
-            context.Result = new BadRequestObjectResult(response);
+            context.Result = new BadRequestObjectResult(apiResponse);
         }
     }
-
-    public void OnActionExecuted(ActionExecutedContext context)
-    {
-        // no action after execution
-    }
+    public void OnActionExecuted(ActionExecutedContext context){ }
 }
 

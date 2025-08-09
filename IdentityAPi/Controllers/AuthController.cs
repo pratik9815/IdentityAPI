@@ -1,6 +1,9 @@
 ﻿using System.Net;
+using Application.Common.Enums;
+using Application.Common.Models;
 using Application.DTOs.Auth;
 using Application.Features.Authentication.Commands.Login;
+using Application.Features.Authentication.Commands.Logout;
 using Application.Features.Authentication.Commands.RefreshTokenCommands;
 using Application.Features.Authentication.Commands.RegisterUser;
 using MediatR;
@@ -21,9 +24,9 @@ namespace IdentityAPi.Controllers
             _mediator = mediator;
         }
         [HttpPost("register")]
-        [ProducesResponseType(typeof(AuthenticationResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthenticationResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<AuthenticationResponse>> Register([FromBody] RegisterRequest request)
+        public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> Register([FromBody] RegisterRequest request)
         {
             var command = new RegisterUserCommand
             {
@@ -34,16 +37,16 @@ namespace IdentityAPi.Controllers
                 PhoneNumber = request.PhoneNumber,
                 IpAddress = GetIpAddress()
             };
-
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            AuthenticationResponse result = await _mediator.Send(command);
+            var apiResponse = ApiResponse<AuthenticationResponse>.SuccessResponse(result, OperationType.Create, "User registered successfully.");
+            return Ok(apiResponse);
         }
 
         [HttpPost("login")]
-        [ProducesResponseType(typeof(AuthenticationResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthenticationResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.Unauthorized)]
-        public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> Login([FromBody] LoginRequest request)
         {
             var command = new LoginCommand
             {
@@ -51,35 +54,40 @@ namespace IdentityAPi.Controllers
                 Password = request.Password,
                 IpAddress = GetIpAddress()
             };
-
             var result = await _mediator.Send(command);
-            return Ok(result);
+            var apiResponse = ApiResponse<AuthenticationResponse>.SuccessResponse(result, OperationType.Create, "User logged in successfully.");
+            return Ok(apiResponse);
         }
 
         [HttpPost("refresh-token")]
-        [ProducesResponseType(typeof(AuthenticationResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<AuthenticationResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.Unauthorized)]
-        public async Task<ActionResult<AuthenticationResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+        public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var command = new RefreshTokenCommand
             {
                 RefreshToken = request.RefreshToken,
                 IpAddress = GetIpAddress()
             };
-
             var result = await _mediator.Send(command);
-            return Ok(result);
+            var apiResponse = ApiResponse<AuthenticationResponse>.SuccessResponse(result, OperationType.Create, "Token refreshed successfully.");
+            return Ok(apiResponse);
         }
 
-        [HttpPost("logout")]
+        [HttpPost("logout/{userId}")]
         [Authorize]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> Logout([FromQuery] Guid userId)
         {
-            // Implementation for logout (revoke refresh token)
-            // This would require creating a LogoutCommand and Handler
-            return Ok(new { message = "Logged out successfully" });
+            var command = new LogoutCommand
+            {
+                UserId = userId,
+                IpAddress = GetIpAddress()
+            };
+            var result = await _mediator.Send(command);
+            var apiResponse = ApiResponse<AuthenticationResponse>.SuccessResponse(result, OperationType.None, "Logged out successfully.");
+            return Ok(apiResponse);
         }
 
         private string GetIpAddress()

@@ -1,6 +1,8 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.DTOs.Auth.Validators;
 using Domain.Interfaces;
 using FluentValidation;
@@ -59,6 +61,41 @@ public static class ConfigureServices
                 ValidAudience = jwtSettings.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnChallenge = context =>
+                {
+                    // Skip the default behavior
+                    context.HandleResponse();
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.Response.ContentType = "application/json";
+                    var response = ApiResponse<string>.FailureResponse(
+                           "Unauthorized: Please provide a valid token.",
+                           Application.Common.Enums.OperationType.None,
+                           "Unauthorized."
+                    );
+                    var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+                    return context.Response.WriteAsync(json);
+                },
+                OnForbidden = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    context.Response.ContentType = "application/json";
+                    var response = ApiResponse<string>.FailureResponse(
+                        "Forbidden: You do not have permission to access this resource.",
+                        Application.Common.Enums.OperationType.None,
+                        "Forbidden."
+                    );
+                    var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+                    return context.Response.WriteAsync(json);
+                }
             };
         });
         services.AddAuthorization();
