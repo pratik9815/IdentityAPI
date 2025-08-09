@@ -20,7 +20,7 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Authenticatio
         {
             AccessToken = "",
             RefreshToken = "",
-            User = null,
+            User = null, 
         };
     }
 }
