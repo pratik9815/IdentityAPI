@@ -111,6 +111,7 @@ public static class ConfigureServices
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuditService, AuditService>();
 
         // MediatR
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterRequestValidator>());

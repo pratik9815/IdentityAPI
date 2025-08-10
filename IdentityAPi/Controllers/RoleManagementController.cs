@@ -1,4 +1,6 @@
 ﻿using System.Net;
+using Application.Common.Enums;
+using Application.Common.Models;
 using Application.DTOs.Roles;
 using Application.Features.Authentication.Commands.AssignRole;
 using Application.Features.Roles.Commands;
@@ -28,21 +30,22 @@ namespace IdentityAPi.Controllers
         /// Get all available roles
         /// </summary>
         [HttpGet("roles")]
-        [ProducesResponseType(typeof(IEnumerable<RoleDto>), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<IEnumerable<RoleDto>>> GetRoles([FromQuery] bool includeUserCount = true)
+        [ProducesResponseType(typeof(IEnumerable<ApiResponse<IEnumerable<RoleDto>>>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<IEnumerable<ApiResponse<IEnumerable<RoleDto>>>>> GetRoles([FromQuery] bool includeUserCount = true)
         {
             var query = new GetRolesQuery { IncludeUserCount = includeUserCount };
             var result = await _mediator.Send(query);
-            return Ok(result);
+            var apiResponse = ApiResponse<IEnumerable<RoleDto>>.SuccessResponse(result, OperationType.Read, "Roles fetched successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Create a new role
         /// </summary>
         [HttpPost("roles")]
-        [ProducesResponseType(typeof(RoleDto), (int)HttpStatusCode.Created)]
+        [ProducesResponseType(typeof(ApiResponse<RoleDto>), (int)HttpStatusCode.Created)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<RoleDto>> CreateRole([FromBody] CreateRoleRequest request)
+        public async Task<ActionResult<ApiResponse<RoleDto>>> CreateRole([FromBody] CreateRoleRequest request)
         {
             var command = new CreateRoleCommand
             {
@@ -51,15 +54,16 @@ namespace IdentityAPi.Controllers
             };
 
             var result = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetUserRoles), new { userId = Guid.Empty }, result);
+            var apiResponse = ApiResponse<RoleDto>.SuccessResponse(result, OperationType.Create, "Role created successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Get all users with their assigned roles
         /// </summary>
         [HttpGet("users")]
-        [ProducesResponseType(typeof(IEnumerable<UserWithRolesDto>), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<IEnumerable<UserWithRolesDto>>> GetUsersWithRoles(
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<UserWithRolesDto>>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<ApiResponse<IEnumerable<UserWithRolesDto>>>> GetUsersWithRoles(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
@@ -74,30 +78,40 @@ namespace IdentityAPi.Controllers
             };
 
             var result = await _mediator.Send(query);
-            return Ok(result);
+            if (result == null || !result.Any())
+            {
+                return NotFound(ApiResponse<IEnumerable<UserWithRolesDto>>.FailureResponse("No users found.", OperationType.Read, "Users not found"));
+            }
+            var apiResponse = ApiResponse<IEnumerable<UserWithRolesDto>>.SuccessResponse(result, OperationType.Read, "Users with roles fetched successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Get roles for a specific user
         /// </summary>
         [HttpGet("users/{userId}/roles")]
-        [ProducesResponseType(typeof(UserWithRolesDto), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<UserWithRolesDto>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<UserWithRolesDto>> GetUserRoles(Guid userId)
+        public async Task<ActionResult<ApiResponse<UserWithRolesDto>>> GetUserRoles(Guid userId)
         {
             var query = new GetUserRolesQuery { UserId = userId };
             var result = await _mediator.Send(query);
-            return Ok(result);
+            if (result == null)
+            {
+                return NotFound(ApiResponse<UserWithRolesDto>.FailureResponse($"User with ID {userId} not found.", OperationType.Read, "User not found"));
+            }
+            var apiResponse = ApiResponse<UserWithRolesDto>.SuccessResponse(result, OperationType.Read, "User roles fetched successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Assign a role to a user
         /// </summary>
         [HttpPost("users/{userId}/roles")]
-        [ProducesResponseType(typeof(RoleAssignmentResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<RoleAssignmentResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<RoleAssignmentResponse>> AssignRole(
+        public async Task<ActionResult<ApiResponse<RoleAssignmentResponse>>> AssignRole(
             Guid userId,
             [FromBody] AssignRoleRequest request)
         {
@@ -111,44 +125,42 @@ namespace IdentityAPi.Controllers
 
             if (!result.Success)
             {
-                return BadRequest(result);
+                return BadRequest(ApiResponse<RoleAssignmentResponse>.FailureResponse(result.Message, OperationType.Create, "Role assignment failed"));
             }
-
-            return Ok(result);
+            var apiResponse = ApiResponse<RoleAssignmentResponse>.SuccessResponse(result, OperationType.Create, "Role assigned successfully."); 
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Remove a role from a user
         /// </summary>
         [HttpDelete("users/{userId}/roles/{roleId}")]
-        [ProducesResponseType(typeof(RoleAssignmentResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<RoleAssignmentResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<RoleAssignmentResponse>> RemoveRole(Guid userId, Guid roleId)
+        public async Task<ActionResult<ApiResponse<RoleAssignmentResponse>>> RemoveRole(Guid userId, Guid roleId)
         {
             var command = new RemoveRoleCommand
             {
                 UserId = userId,
                 RoleId = roleId
             };
-
             var result = await _mediator.Send(command);
-
             if (!result.Success)
             {
-                return BadRequest(result);
+                return BadRequest(ApiResponse<RoleAssignmentResponse>.FailureResponse(result.Message, OperationType.Create, "Role assignment failed"));
             }
-
-            return Ok(result);
+            var apiResponse = ApiResponse<RoleAssignmentResponse>.SuccessResponse(result, OperationType.Create, "Role assigned successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Bulk assign roles to multiple users
         /// </summary>
         [HttpPost("bulk-assign")]
-        [ProducesResponseType(typeof(BulkRoleAssignmentResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<BulkRoleAssignmentResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<BulkRoleAssignmentResponse>> BulkAssignRoles([FromBody] BulkRoleAssignmentRequest request)
+        public async Task<ActionResult<ApiResponse<BulkRoleAssignmentResponse>>> BulkAssignRoles([FromBody] BulkRoleAssignmentRequest request)
         {
             var command = new BulkAssignRoleCommand
             {
@@ -157,16 +169,17 @@ namespace IdentityAPi.Controllers
             };
 
             var result = await _mediator.Send(command);
-            return Ok(result);
+            var apiResponse = ApiResponse<BulkRoleAssignmentResponse>.SuccessResponse(result, OperationType.Create, "Roles assigned successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Assign multiple roles to a single user
         /// </summary>
         [HttpPost("users/{userId}/roles/bulk")]
-        [ProducesResponseType(typeof(BulkRoleAssignmentResponse), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ApiResponse<BulkRoleAssignmentResponse>), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<BulkRoleAssignmentResponse>> AssignMultipleRolesToUser(
+        public async Task<ActionResult<ApiResponse<BulkRoleAssignmentResponse>>> AssignMultipleRolesToUser(
             Guid userId,
             [FromBody] List<Guid> roleIds)
         {
@@ -175,9 +188,9 @@ namespace IdentityAPi.Controllers
                 UserIds = new List<Guid> { userId },
                 RoleIds = roleIds
             };
-
             var result = await _mediator.Send(command);
-            return Ok(result);
+            var apiResponse = ApiResponse<BulkRoleAssignmentResponse>.SuccessResponse(result, OperationType.Create, "Roles assigned successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
@@ -197,16 +210,16 @@ namespace IdentityAPi.Controllers
                 _mediator.Send(new RemoveRoleCommand { UserId = userId, RoleId = role.Id }));
 
             await Task.WhenAll(tasks);
-
-            return Ok(new { message = "All roles removed successfully" });
+            var apiResponse = ApiResponse<object>.SuccessResponse(null, OperationType.Delete, "All roles removed successfully.");
+            return Ok(apiResponse);
         }
 
         /// <summary>
         /// Get role assignment statistics
         /// </summary>
         [HttpGet("statistics")]
-        [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult> GetRoleStatistics()
+        [ProducesResponseType(typeof(ApiResponse<object>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetRoleStatistics()
         {
             var rolesQuery = new GetRolesQuery { IncludeUserCount = true };
             var roles = await _mediator.Send(rolesQuery);
@@ -230,8 +243,8 @@ namespace IdentityAPi.Controllers
                     .Take(5)
                     .Select(r => new { r.Name, r.UserCount })
             };
-
-            return Ok(statistics);
+            var apiResponse = ApiResponse<object>.SuccessResponse(statistics, OperationType.Read, "Role statistics fetched successfully.");
+            return Ok(apiResponse);
         }
     }
 }

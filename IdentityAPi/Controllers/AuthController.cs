@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Application.Common.Enums;
+using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.DTOs.Auth;
 using Application.Features.Authentication.Commands.Login;
@@ -18,10 +19,12 @@ namespace IdentityAPi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUserService _currentUserService;
 
-        public AuthController(IMediator mediator)
+        public AuthController(IMediator mediator, ICurrentUserService currentUserService)
         {
             _mediator = mediator;
+            _currentUserService = currentUserService;
         }
         [HttpPost("register")]
         [ProducesResponseType(typeof(ApiResponse<AuthenticationResponse>), (int)HttpStatusCode.OK)]
@@ -75,11 +78,12 @@ namespace IdentityAPi.Controllers
             return Ok(apiResponse);
         }
 
-        [HttpPost("logout/{userId}")]
+        [HttpPost("logout")]
         [Authorize]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<IActionResult> Logout([FromQuery] Guid userId)
+        public async Task<IActionResult> Logout()
         {
+            Guid userId = Guid.Parse(_currentUserService.UserId);
             var command = new LogoutCommand
             {
                 UserId = userId,

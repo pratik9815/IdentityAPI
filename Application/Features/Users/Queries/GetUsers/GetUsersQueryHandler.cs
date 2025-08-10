@@ -18,7 +18,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IEnumerable<G
     }
     public async Task<IEnumerable<GetUserDTO>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
-        var users = await _unitOfWork.Users.GetAllAsync();
+        var users = await _unitOfWork.Users.GetAllUserAsync();
         var userDtos = new List<GetUserDTO>();
         foreach (var user in users)
         {

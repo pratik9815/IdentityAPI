@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Auth;
+﻿using Application.Common.Models;
+using Application.DTOs.Auth;
 using Domain.Interfaces;
 using MediatR;
 
@@ -15,7 +16,6 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Authenticatio
     {
         // Revoke all refresh tokens for the user
         await _unitOfWork.RefreshTokens.RevokeAllUserTokensAsync(request.UserId,request.IpAddress);
-        // Optionally, you can return a response indicating success
         return new AuthenticationResponse
         {
             AccessToken = "",

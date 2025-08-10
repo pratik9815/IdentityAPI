@@ -29,7 +29,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             throw new UnauthorizedAccessException("Invalid refresh token");
         }
 
-        var user = await _unitOfWork.Users.GetByIdAsync(refreshToken.UserId);
+        var user = await _unitOfWork.Users.GetUserById(refreshToken.UserId);
         if (user == null || !user.IsActive || user.IsDeleted)
         {
             throw new UnauthorizedAccessException("User not found or inactive");
@@ -46,7 +46,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
         {
             Id = Guid.NewGuid(),
             Token = newRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(1),
             CreatedByIp = request.IpAddress,
             UserId = user.Id
             // CreatedAt, CreatedBy will be set automatically by DbContext

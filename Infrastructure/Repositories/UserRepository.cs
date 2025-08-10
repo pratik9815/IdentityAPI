@@ -36,4 +36,18 @@ public class UserRepository: Repository<User>, IUserRepository
     {
         return !await _dbSet.AnyAsync(u => u.Email == email);
     }
+    public async Task<IEnumerable<User>> GetAllUserAsync()
+    {
+        return await _dbSet
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .ToListAsync();
+    }
+    public async Task<User> GetUserById(Guid userId)
+    {
+        return await _dbSet
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+    }
 }

@@ -12,5 +12,7 @@ public interface IUserRepository : IRepository<User>
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetUserWithRefreshTokensAsync(Guid userId);
     Task<bool> IsEmailUniqueAsync(string email);
+    Task<IEnumerable<User>> GetAllUserAsync();
+    Task<User> GetUserById(Guid userId);
 }
 

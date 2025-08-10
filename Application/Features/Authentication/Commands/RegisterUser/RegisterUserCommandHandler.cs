@@ -25,7 +25,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
     public async Task<AuthenticationResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         // Check if email already exists
-        if (await _unitOfWork.Users.IsEmailUniqueAsync(request.Email) == false)
+        if (!await _unitOfWork.Users.IsEmailUniqueAsync(request.Email))
         {
             throw new InvalidOperationException("Email already exists");
         }
