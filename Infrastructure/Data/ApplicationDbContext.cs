@@ -20,7 +20,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<AuditTrail> AuditTrails { get; set; }
-
+    
+    public DbSet<MenuFunction> MenuFunctions { get; set; }
+    public DbSet<RoleMenu> RoleMenus {  get; set; }
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var auditEntries = OnBeforeSaveChanges();
@@ -128,27 +130,39 @@ public class ApplicationDbContext : DbContext
         });
 
         // Seed default roles
-        var adminRoleId = Guid.NewGuid();
-        var userRoleId = Guid.NewGuid();
+        //var adminRoleId = Guid.NewGuid();
+        //var userRoleId = Guid.NewGuid();
 
-        modelBuilder.Entity<Role>().HasData(
-            new Role
-            {
-                Id = adminRoleId,
-                Name = "Admin",
-                Description = "Administrator role",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "System"
-            },
-            new Role
-            {
-                Id = userRoleId,
-                Name = "User",
-                Description = "Regular user role",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "System"
-            }
-        );
+        //modelBuilder.Entity<Role>().HasData(
+        //    new Role
+        //    {
+        //        Id = adminRoleId,
+        //        Name = "Admin",
+        //        Description = "Administrator role",
+        //        CreatedAt = DateTime.UtcNow,
+        //        CreatedBy = "System"
+        //    },
+        //    new Role
+        //    {
+        //        Id = userRoleId,
+        //        Name = "User",
+        //        Description = "Regular user role",
+        //        CreatedAt = DateTime.UtcNow,
+        //        CreatedBy = "System"
+        //    }
+        //);
+        modelBuilder.Entity<MenuFunction>().HasKey(e => e.Id);
+        modelBuilder.Entity<RoleMenu>().HasKey(rm => new { rm.RoleId, rm.MenuFunctionId });
+
+        modelBuilder.Entity<RoleMenu>()
+       .HasOne(rm => rm.Role)
+       .WithMany(r => r.RoleMenus)
+       .HasForeignKey(rm => rm.RoleId);
+
+        modelBuilder.Entity<RoleMenu>()
+            .HasOne(rm => rm.MenuFunction)
+            .WithMany(m => m.RoleMenus)
+            .HasForeignKey(rm => rm.MenuFunctionId);
     }
     private List<AuditEntry> OnBeforeSaveChanges()
     {

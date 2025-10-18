@@ -14,5 +14,5 @@ public class Role : BaseAuditableSoftDeleteEntity
     public string Description { get; set; } = string.Empty;
 
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-
+    public virtual ICollection<RoleMenu> RoleMenus { get; set; } = new List<RoleMenu>();
 }
